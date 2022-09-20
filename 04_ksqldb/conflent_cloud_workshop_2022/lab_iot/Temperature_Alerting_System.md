@@ -21,12 +21,6 @@ show properties;
 
 ## 2. Create Stream (TEMPERATURE_READINGS)
 
-Please set the following query property:
-
-- `auto.offset.reset` to 'Earliest'
-
-SET 'auto.offset.reset' = 'earliest';
-
 ```
 CREATE STREAM TEMPERATURE_READINGS (ID VARCHAR KEY, TIMESTAMP VARCHAR, READING BIGINT)
     WITH (KAFKA_TOPIC = 'TEMPERATURE_READINGS',
@@ -55,7 +49,14 @@ INSERT INTO TEMPERATURE_READINGS (ID, TIMESTAMP, READING) VALUES ('1', '2020-01-
 INSERT INTO TEMPERATURE_READINGS (ID, TIMESTAMP, READING) VALUES ('1', '2020-01-15 02:50:30', 60);
 ```
 
+Please set the following query property:
+
+- `auto.offset.reset` to 'Earliest'
+
+SET 'auto.offset.reset' = 'earliest';
+
 ```
+
 SELECT
     ID,
     TIMESTAMPTOSTRING(WINDOWSTART, 'HH:mm:ss', 'UTC') AS START_PERIOD,
@@ -67,6 +68,21 @@ SELECT
   HAVING SUM(READING)/COUNT(READING) < 45
   EMIT CHANGES
   LIMIT 3;
+
+```
+
+This query should produce the following output
+
+```
++--------------------+--------------------+--------------------+--------------------+
+|ID                  |START_PERIOD        |END_PERIOD          |AVG_READING         |
++--------------------+--------------------+--------------------+--------------------+
+|1                   |02:25:00            |02:35:00            |42                  |
+|1                   |02:30:00            |02:40:00            |40                  |
+|1                   |02:30:00            |02:40:00            |42                  |
+Limit Reached
+Query terminated
+
 ```
 
 Enter following command to list all existing streams:
@@ -75,10 +91,9 @@ Enter following command to list all existing streams:
 list streams;
 ```
 
-Create table:
+## 3. Create Table (TRIGGERED_ALERTS)
 
 ```
--- Summarize products.
 CREATE TABLE TRIGGERED_ALERTS AS
     SELECT
         ID AS KEY,
@@ -106,12 +121,57 @@ CREATE STREAM ALERTS AS
     PARTITION BY ID;
 ```
 
-This will create a table which you can use for pull queries. It will also appear in the 'Persistent queries' tab.
-
 Enter following command to list all existing tables:
 
 ```
 list tables;
+```
+
+```
+
+SELECT
+    ID,
+    START_PERIOD,
+    END_PERIOD,
+    AVG_READING
+FROM ALERTS
+EMIT CHANGES
+LIMIT 3;
+
+```
+
+The output should look similar to:
+
+```
+
++--------------------+--------------------+--------------------+--------------------+
+|ID                  |START_PERIOD        |END_PERIOD          |AVG_READING         |
++--------------------+--------------------+--------------------+--------------------+
+|1                   |02:25:00            |02:35:00            |42                  |
+|1                   |02:30:00            |02:40:00            |40                  |
+|1                   |02:30:00            |02:40:00            |42                  |
+Limit Reached
+Query terminated
+
+```
+
+Check underlying Kafka topic
+
+```
+PRINT ALERTS FROM BEGINNING LIMIT 3;
+
+```
+
+The output should look similar to:
+
+```
+Key format: JSON or KAFKA_STRING
+Value format: JSON or KAFKA_STRING
+rowtime: 2020/01/15 02:30:30.000 Z, key: 1, value: {"START_PERIOD":"02:25:00","END_PERIOD":"02:35:00","AVG_READING":42}, partition: 0
+rowtime: 2020/01/15 02:30:30.000 Z, key: 1, value: {"START_PERIOD":"02:30:00","END_PERIOD":"02:40:00","AVG_READING":40}, partition: 0
+rowtime: 2020/01/15 02:35:30.000 Z, key: 1, value: {"START_PERIOD":"02:30:00","END_PERIOD":"02:40:00","AVG_READING":42}, partition: 0
+Topic printing ceased
+
 ```
 
 END Temperature Alerting System Lab.
