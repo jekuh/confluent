@@ -11,7 +11,8 @@
 
 - [Masking PII Data](lab_logistik/masking.md)
 
-### Retail and IoT
+### Internet of Things (IoT)
 
-- [Bosch PoC](lab_iot/)
-- [Bosch PoC]()
+- [Temperature Alerting System](lab_iot/Temperature_Alerting_System.md)
+
+- [Bosch PoC ](lab_iot/Bosch_PoC.md)
