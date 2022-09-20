@@ -1,17 +1,23 @@
-# Confluent Cloud ksqlDB Hands-On Workshop 2022 Wiesn Edition
+# Learn Apache kafka on Confluent Cloud via hands on lab examples.
 
-## Agenda
+## Modules
 
-### Financial Services Use Cases
+### 01 Confluent Cloud Overview.
 
-- [Payment Status Check](lab_finanzdaten/FinancialServices_Payment_Status_Check.md)
-- [Customer Loyalty Program](lab_finanzdaten/FinancialServices_Customer_Loyalty_Program.md)
+- [Lab 1](lab/documentation.md)
+- [Lab 2](lab/documentation.md)
 
-### Retail and Logistic
+### 02 Producer Consumer Client
 
-- [Masking PII Data](lab_logistik/masking.md)
+- [Lab 1](lab/documentation.md)
+- [Lab 2](lab/documentation.md)
 
-### Retail and IoT
+### 03 Kafka Connect
 
-- [Bosch PoC](lab_iot/)
-- [Bosch PoC]()
+- [Lab 1](lab/documentation.md)
+- [Lab 2](lab/documentation.md)
+
+### 04 Confluent ksqlDB
+
+- [Lab 1](lab/documentation.md)
+- [Lab 2](lab/documentation.md)
