@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 1m # By default, scrape targets every 15 seconds.
+  evaluation_interval: 1m # By default, scrape targets every 15 seconds.
+
+scrape_configs:
+  - job_name: Confluent Cloud
+    scrape_interval: 1m
+    scrape_timeout: 1m
+    honor_timestamps: true
+    static_configs:
+      - targets:
+          - api.telemetry.confluent.cloud
+    scheme: https
+    basic_auth:
+      username: ABNAPPNLEU74S2FJ
+      password: 5Isdp9dcnyBDztaQyd+S1eawVsg7lVV5dePOO/Uu1EfaryidVbDX4a3TpKRMU50N
+    metrics_path: /v2/metrics/cloud/export
+    params:
+      "resource.kafka.id":
+        - lkc-7o89o
+        - lkc-mrmj1
+      "resource.schema_registry.id":
+        - lsrc-o658x
