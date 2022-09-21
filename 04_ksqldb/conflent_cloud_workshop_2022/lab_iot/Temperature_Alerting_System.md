@@ -5,7 +5,7 @@ In this tutorial, we'll write a program that monitors a stream of temperature re
 consistently drops below 45 degrees Fahrenheit for a period of 10 minutes.
 
 We are going to build data pipeline which should look like this:
-![ Temperature Alerting System Flow](img_alerting_system_program/datapipeline.png)
+![ Temperature Alerting System Flow](img_temperature_alerting_system/datapipeline.png)
 
 ## 0 Confluent cloud ksqldb setup
 
@@ -23,6 +23,7 @@ Some basic ksqlDB queries cluster:
 show properties;
 list table;
 list streams;
+
 ```
 
 ## 1. Create Stream (TEMPERATURE_READINGS)
