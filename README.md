@@ -4,20 +4,20 @@
 
 ### 01 Confluent Cloud Overview.
 
-- [Lab 1](lab/documentation.md)
-- [Lab 2](lab/documentation.md)
+- [Lab 1 - Create Example Cluster ](lab/documentation.md)
+- [Lab 2 - Produce and Consume Streams](lab/documentation.md)
 
 ### 02 Producer Consumer Client
 
-- [Lab 1](lab/documentation.md)
-- [Lab 2](lab/documentation.md)
+- [Lab 1 - CLI Producer Consumer](lab/documentation.md)
+- [Lab 2 - Java Producer Consumer](lab/documentation.md)
 
 ### 03 Kafka Connect
 
-- [Lab 1](lab/documentation.md)
-- [Lab 2](lab/documentation.md)
+- [Lab 1 - Datagen Connector](lab/documentation.md)
+- [Lab 2 - AWS Sink COnnector ](lab/documentation.md)
 
 ### 04 Confluent ksqlDB
 
-- [Lab 1](lab/documentation.md)
-- [Lab 2](lab/documentation.md)
+- [Use case 1 - Retails](lab/documentation.md)
+- [Lab 2 - Bosch PoC](lab/documentation.md)

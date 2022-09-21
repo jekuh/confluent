@@ -15,6 +15,8 @@ We are going to build data pipeline which should look like this:
 
 ## 2. Test Script
 
+[1a] Create Stream(S1)
+
 ```
 
 CREATE STREAM S1 (
