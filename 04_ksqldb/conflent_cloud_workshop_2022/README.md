@@ -15,4 +15,4 @@
 
 - [Temperature Alerting System](lab_iot/Temperature_Alerting_System.md)
 
-- [Bosch PoC ](lab_iot/Bosch_PoC.md)
+- [Plant Machine Stream Processing](lab_iot/Plant_Machine_Stream.md)
