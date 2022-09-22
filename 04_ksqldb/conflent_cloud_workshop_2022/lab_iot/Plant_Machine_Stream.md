@@ -15,100 +15,79 @@ We are going to build data pipeline which should look like this:
 
 ## 2. Test Script
 
-[1a] Create Stream(S1)
+[1] define stream for data of interest
+CREATE STREAM WELL_ESP_SENSOR_READINGS_RAW (
+`MessageHeader` STRUCT<`MessageName` VARCHAR, `TimeStamp` VARCHAR>, \
+`ProcessData` STRUCT<`reservoir_code` VARCHAR, `equipment_type` VARCHAR, `date` STRING, \
+`wells` ARRAY<STRUCT<`well_name` VARCHAR, `equipment_nr` VARCHAR, `equipment_installation_depth` INT, \
+`sensor_readings` STRUCT<`bottomhole_pressure` ARRAY<INT>, `bottomhole_temp` ARRAY<DOUBLE>,`motor_current` ARRAY<DOUBLE>, `motor_speed` ARRAY<DOUBLE>, `time_values` ARRAY<DOUBLE>>>>>
+) WITH (KAFKA_TOPIC='well.equipment.esp.sensor.readings-raw', VALUE_FORMAT='JSON');
+
+[1a] create unique ID
 
 ```
-
-CREATE STREAM S1 (
-`MessageHeader` STRUCT<`MessageName` VARCHAR, `TimeStamp` VARCHAR>,
-`ProcessData` STRUCT<`ip0` VARCHAR, `date` STRING, `last step row` INTEGER, `total time` DOUBLE,
-`tightening steps` ARRAY<STRUCT<`row` VARCHAR, `column` VARCHAR, `name` VARCHAR,
-`graph` STRUCT<`angle values` ARRAY<DOUBLE>, `torque values` ARRAY<DOUBLE>,`gradient values` ARRAY<DOUBLE>, `time values` ARRAY<DOUBLE>
-)
-WITH (KAFKA_TOPIC='ae-q-mfg.webscada-event.rexrodt-sen-wujp-vcu-raw', PARTITION=1, VALUE_FORMAT='JSON');
-
-```
-
-[1a] Create unique ID
-
-```
-
-CREATE OR REPLACE STREAM S2 WITH (KAFKA_TOPIC='t2',VALUE_FORMAT='JSON', KEY_FORMAT='KAFKA', PARTITIONS='2' ) as
-select UUID() as PROCESS_EVENT_UID, \*
-from S1 emit changes;
-
+CREATE OR REPLACE STREAM WELL_ESP_SENSOR_READINGS_KEYED WITH (KAFKA_TOPIC='well.equipment.esp.sensor.readings-keyed', VALUE_FORMAT='JSON', KEY_FORMAT='KAFKA', PARTITIONS='2' ) as \
+select UUID() as PROCESS_EVENT_UID, * \
+from WELL_ESP_SENSOR_READINGS_RAW emit changes;
 ```
 
 [2] explode process steps
 
 ```
-
-CREATE OR REPLACE STREAM S3 WITH (KAFKA_TOPIC='t3',VALUE_FORMAT='JSON', KEY_FORMAT='KAFKA', PARTITIONS='2' ) as
-select UUID() as PROCESS_EVENT_UID, `ProcessData`->`date` as PROCESS_DATE, EXPLODE(`ProcessData`->`tightening steps`) as PROCESS_STEP
-from S2 emit changes;
-
+CREATE OR REPLACE STREAM WELL_ESP_SENSOR_READINGS_WELL_LEVEL WITH (KAFKA_TOPIC='well.equipment.esp.sensor.readings-per-well',VALUE_FORMAT='JSON', KEY_FORMAT='KAFKA', PARTITIONS='2' ) as \
+select UUID() as PROCESS_EVENT_UID, `ProcessData`->`date` as PROCESS_DATE, EXPLODE(`ProcessData`->`wells`) as WELL \
+from WELL_ESP_SENSOR_READINGS_KEYED emit changes;
 ```
 
 [3] simple transformations + synthetic index
 
 ```
-
-CREATE OR REPLACE STREAM S4 WITH (KAFKA_TOPIC='t4',VALUE_FORMAT='JSON', KEY_FORMAT='KAFKA', PARTITIONS='2' ) as
-select PROCESS_EVENT_UID, PROCESS_DATE, STRINGTOTIMESTAMP(PROCESS_DATE,'yyyy-MM-dd HH:mm:ss') AS PROCESS_TIMESTAMP, (PROCESS_STEP->`row`+PROCESS_STEP->`column`) as STEP_ID, PROCESS_STEP->`name` as STEP_NAME,
-PROCESS_STEP->`graph`->`angle values`,
-PROCESS_STEP->`graph`->`torque values`,
-PROCESS_STEP->`graph`->`gradient values`,
-PROCESS_STEP->`graph`->`time values`,
-GENERATE_SERIES(0,ARRAY_LENGTH(PROCESS_STEP->`graph`->`angle values`)) AS PROCESS_STEP_SERIE_INDEX
-from S3 emit changes;
-
+CREATE OR REPLACE STREAM WELL_ESP_SENSOR_READINGS_WELL_TRANSFORMED WITH (KAFKA_TOPIC='well.equipment.esp.sensor.readings-well-transformed',VALUE_FORMAT='JSON', KEY_FORMAT='KAFKA', PARTITIONS='2' ) as \
+select PROCESS_EVENT_UID, PROCESS_DATE, STRINGTOTIMESTAMP(PROCESS_DATE,'yyyy-MM-dd HH:mm:ss') AS PROCESS_TIMESTAMP,
+wELL->`well_name` as WELL_NAME, wELL->`euipment_nr` as EQUIPMENT_ID, \
+WELL->`sensor_readings`->`bottomhole_pressure`, \
+WELL->`sensor_readings`->`bottomhole_temp`, \
+WELL->`sensor_readings`->`motor_current`, \
+WELL->`sensor_readings`->`motor_speed`, \
+WELL->`sensor_readings`->`time_values`, \
+GENERATE_SERIES(0,ARRAY_LENGTH(WELL->`sensor_readings`->`bottomhole_pressure`)) AS SENSOR_READING_SERIE_INDEX \
+from WELL_ESP_SENSOR_READINGS_WELL_LEVEL emit changes;
 ```
 
 [4] explode time series
 
 ```
-
-CREATE OR REPLACE STREAM S5 WITH (KAFKA_TOPIC='t5',VALUE_FORMAT='JSON', KEY_FORMAT='KAFKA', PARTITIONS='2' ) as
-select PROCESS_EVENT_UID, PROCESS_DATE, PROCESS_TIMESTAMP, STEP_ID, STEP_NAME,
-EXPLODE(`angle values`) as SERIE_VALUE_ANGLE,
-EXPLODE(`torque values`) as SERIE_VALUE_TORQUE,
-EXPLODE(`gradient values`) as SERIE_VALUE_GRADIENT,
-EXPLODE(`time values`) as SERIE_VALUE_TIME,
-EXPLODE(PROCESS_STEP_SERIE_INDEX) AS SERIE_INDEX
-from S4 emit changes;
-
+CREATE OR REPLACE STREAM WELL_ESP_SENSOR_READINGS_SENSOR_LEVEL WITH (KAFKA_TOPIC='well.equipment.esp.sensor.readings-sensor-level',VALUE_FORMAT='JSON', KEY_FORMAT='KAFKA', PARTITIONS='2' ) as \
+select PROCESS_EVENT_UID, PROCESS_DATE, PROCESS_TIMESTAMP, WELL_NAME, EQUIPMENT_ID \
+EXPLODE(`bottomhole_pressure`) as MEASUREMENT_BOTTOMHOLE_PRESSURE, \
+EXPLODE(`bottomhole_temp`) as MEASUREMENT_BOTTOMHOLE_TEMP, \
+EXPLODE(`motor_current`) as MEASUREMENT_MOTOR_CURRENT, \
+EXPLODE(`motor_speed`) as MEASUREMENT_MOTOR_SPEED, \
+EXPLODE(`time_values`) as SERIE_VALUE_TIME, \
+EXPLODE(SENSOR_READING_SERIE_INDEX) AS MEASUREMENT_INDEX \
+from WELL_ESP_SENSOR_READINGS_WELL_TRANSFORMED emit changes;
 ```
 
 [5] create timeseries timestamp
 
 ```
+CREATE OR REPLACE STREAM WELL_ESP_SENSOR_READINGS_SENSOR_MEASUREMENT WITH (KAFKA_TOPIC='well.equipment.esp.sensor.readings-measurement-timestamp',VALUE_FORMAT='JSON', KEY_FORMAT='KAFKA', PARTITIONS='2' ) as \
+select PROCESS_EVENT_UID, PROCESS_DATE, PROCESS_TIMESTAMP, WELL_NAME, EQUIPMENT_ID, \
+(EQUIPMENT_ID+"-"+CAST(MEASUREMENT_INDEX AS STRING)) as MEASUREMENT_ID, \
+MEASUREMENT_BOTTOMHOLE_PRESSURE, MEASUREMENT_BOTTOMHOLE_TEMP, MEASUREMENT_MOTOR_CURRENT, MEASUREMENT_MOTOR_SPEED, SERIE_VALUE_TIME, \
+CAST(PROCESS_TIMESTAMP+1000.*SERIE_VALUE_TIME AS BIGINT) AS MEASUREMENT_TIMESTAMP, \
+TIMESTAMPTOSTRING(CAST(PROCESS_TIMESTAMP+1000.*SERIE_VALUE_TIME AS BIGINT),'yyyy-MM-dd HH:mm:ss:SSS','UTC') AS MEASUREMENT_TIMESTAMP_UTC, \
+MEASUREMENT_INDEX \
+from WELL_ESP_SENSOR_READINGS_SENSOR_LEVEL_emit changes;
+```
 
-CREATE OR REPLACE STREAM S6 WITH (KAFKA_TOPIC='t6',VALUE_FORMAT='JSON', KEY_FORMAT='KAFKA', PARTITIONS='2' ) as
-select PROCESS_EVENT_UID, PROCESS_DATE, PROCESS_TIMESTAMP, STEP_ID, STEP_NAME,
-SERIE_VALUE_ANGLE, SERIE_VALUE_TORQUE, SERIE_VALUE_GRADIENT, SERIE_VALUE_TIME,
-CAST(PROCESS_TIMESTAMP+1000.*SERIE_VALUE_TIME AS BIGINT) AS SERIE_TIMESTAMP,
-TIMESTAMPTOSTRING(CAST(PROCESS_TIMESTAMP+1000.*SERIE_VALUE_TIME AS BIGINT),'yyyy-MM-dd HH:mm:ss:SSS','UTC') AS SERIE_TIMESTAMP_UTC,
-SERIE_INDEX
-from S5 emit changes;
+The final topic 'well.equipment.esp.sensor.readings-measurement-timestamp' holds data like
+
+```
+{ "PROCESS_EVENT_UID": "c1b11a22-0ef4-4577-869d-043203a9205e", "PROCESS_DATE": "2022-09-18 16:27:07", "PROCESS_TIMESTAMP": 1619533002000, in I'll"WELL_NAME": "FGHN-21", "EQUIPMENT_ID": "10968", "MEASUREMENT_ID":"10968-1", "MEASUREMENT_BOTTOMHOLE_PRESSURE": 920, "MEASUREMENT_BOTTOMHOLE_TEMP": 265.0, "MEASUREMENT_MOTOR_CURRENT": 5.48, "MEASUREMENT_MOTOR_SPEED": 31, "MEASUREMENT_TIMESTAMP": 1619533002002, "MEASUREMENT_TIMESTAMP_UTC": "2022-09-18 16:27:07:002", "MEASUREMENT_INDEX": 1}
 
 ```
 
-The final topic 't6' holds data like
-{
-"PROCESS_EVENT_UID": "c1b11a22-0ef4-4577-869d-043203a9205e",
-"PROCESS_DATE": "2021-04-27 16:16:42",
-"PROCESS_TIMESTAMP": 1619533002000,
-"STEP_ID": "5A",
-"STEP_NAME": "Gradient suchen",
-"SERIE_VALUE_ANGLE": 2130.75,
-"SERIE_VALUE_TORQUE": 0.032,
-"SERIE_VALUE_GRADIENT": 0.0001,
-"SERIE_VALUE_TIME": 1.986,
-"SERIE_TIMESTAMP": 1619533003986,
-"SERIE_TIMESTAMP_UTC": "2021-04-27 14:16:43:986",
-"SERIE_INDEX": 64
-}
-
-END Bosch PoC Lab.
+END Plant Machine Data Lab.
 
 [Back](../README.md#Agenda) to Agenda.
