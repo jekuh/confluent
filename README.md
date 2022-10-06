@@ -19,5 +19,6 @@
 
 ### 04 Confluent ksqlDB
 
-- [Use case 1 - Retails](lab/documentation.md)
-- [Lab 2 - Bosch PoC](lab/documentation.md)
+- [Use Case 1 - Financial Services](lab/documentation.md)
+- [Use Case 2 - Retails](lab/documentation.md)
+- [Use Case 3 - Internet of Things](lab/documentation.md)

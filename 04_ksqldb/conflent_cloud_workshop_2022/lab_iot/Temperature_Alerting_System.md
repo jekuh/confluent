@@ -1,32 +1,25 @@
 # Internet of Things Use Case: Temperature Alerting System (Confluent Cloud)
 
-You want to build an alerting system that automatically detects if the temperature of a room consistently drops.
-In this tutorial, we'll write a program that monitors a stream of temperature readings and detects when the temperature
+We want to build an alerting system that automatically detects if the temperature of a room consistently drops.
+We'll write a program that monitors a stream of temperature readings and detects when the temperature
 consistently drops below 45 degrees Fahrenheit for a period of 10 minutes.
 
-We are going to build data pipeline which should look like this:
+Our data pipeline should look like this:
 ![ Temperature Alerting System Flow](img_temperature_alerting_system/datapipeline.png)
 
-## 0 Confluent cloud ksqldb setup
+## 1 Confluent cloud ksqldb setup
 
 - Login to Confluent Cloud.
 - Select or create an environment.
-- Create new cluster or select an existing from within your environment.
-- From the left panel select "ksqlDB" to display all apps.
-- Select your ksqlDB cluster to display the ksqlDB Editor.
+- Create new KsqlDB cluster or select an existing from within your environment.
+- Select "KsqlDB" from your left panel to display all KsqlDb Clusters.
+- Select a KsqlDB cluster to display the ksqlDB Editor.
 
 ![Start Screen](img_temperature_alerting_system/ksqlDB_Start.png)
 
-Some basic ksqlDB queries cluster:
+## 2. Create Topic (TEMPERATURE_READINGS)
 
-```
-show properties;
-list table;
-list streams;
-
-```
-
-## 1. Create Stream (TEMPERATURE_READINGS)
+## 3. Create and populate streams.
 
 ```
 CREATE STREAM TEMPERATURE_READINGS (ID VARCHAR KEY, TIMESTAMP VARCHAR, READING BIGINT)
@@ -43,17 +36,17 @@ Check your creation with describe.
 describe TEMPERATURE_READINGS;
 ```
 
-## 2 Insert some data in created stream
+Insert some data in created stream
 
 ```
-INSERT INTO TEMPERATURE_READINGS (ID, TIMESTAMP, READING) VALUES ('1', '2022-09-20 02:15:30', 55);
-INSERT INTO TEMPERATURE_READINGS (ID, TIMESTAMP, READING) VALUES ('1', '2022-09-20 02:20:30', 50);
-INSERT INTO TEMPERATURE_READINGS (ID, TIMESTAMP, READING) VALUES ('1', '2022-09-20 02:25:30', 45);
-INSERT INTO TEMPERATURE_READINGS (ID, TIMESTAMP, READING) VALUES ('1', '2022-09-20 02:30:30', 40);
-INSERT INTO TEMPERATURE_READINGS (ID, TIMESTAMP, READING) VALUES ('1', '2022-09-20 02:35:30', 45);
-INSERT INTO TEMPERATURE_READINGS (ID, TIMESTAMP, READING) VALUES ('1', '2022-09-20 02:40:30', 50);
-INSERT INTO TEMPERATURE_READINGS (ID, TIMESTAMP, READING) VALUES ('1', '2022-09-20 02:45:30', 55);
-INSERT INTO TEMPERATURE_READINGS (ID, TIMESTAMP, READING) VALUES ('1', '2022-09-20 02:50:30', 60);
+INSERT INTO TEMPERATURE_READINGS (ID, TIMESTAMP, READING) VALUES ('1', '2022-09-23 02:15:30', 55);
+INSERT INTO TEMPERATURE_READINGS (ID, TIMESTAMP, READING) VALUES ('1', '2022-09-23 02:20:30', 50);
+INSERT INTO TEMPERATURE_READINGS (ID, TIMESTAMP, READING) VALUES ('1', '2022-09-23 02:25:30', 45);
+INSERT INTO TEMPERATURE_READINGS (ID, TIMESTAMP, READING) VALUES ('1', '2022-09-23 02:30:30', 40);
+INSERT INTO TEMPERATURE_READINGS (ID, TIMESTAMP, READING) VALUES ('1', '2022-09-23 02:35:30', 45);
+INSERT INTO TEMPERATURE_READINGS (ID, TIMESTAMP, READING) VALUES ('1', '2022-09-23 02:40:30', 50);
+INSERT INTO TEMPERATURE_READINGS (ID, TIMESTAMP, READING) VALUES ('1', '2022-09-23 02:45:30', 55);
+INSERT INTO TEMPERATURE_READINGS (ID, TIMESTAMP, READING) VALUES ('1', '2022-09-23 02:50:30', 60);
 ```
 
 Please set the following query property:
@@ -62,7 +55,7 @@ Please set the following query property:
 
 SET 'auto.offset.reset' = 'earliest';
 
-## 3 Select data from created stream
+## 4 Select data from created stream
 
 ```
 SELECT
@@ -99,7 +92,7 @@ Enter following command to list all existing streams:
 list streams;
 ```
 
-## 4. Create Table (TRIGGERED_ALERTS)
+## 5. Create Table (TRIGGERED_ALERTS)
 
 ```
 CREATE TABLE TRIGGERED_ALERTS AS

@@ -15,4 +15,4 @@
 
 - [Temperature Alerting System](lab_iot/Temperature_Alerting_System.md)
 
-- [Plant Machine Stream Processing](lab_iot/Plant_Machine_Stream.md)
+- [Pump Stream Processing](lab_iot/Pump_Stream_Processing.md)
