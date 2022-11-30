@@ -1,0 +1,9 @@
+syntax = "proto3";
+package ksql;
+
+message users {
+  int64 registertime = 1;
+  string userid = 2;
+  string regionid = 3;
+  string gender = 4;
+}
